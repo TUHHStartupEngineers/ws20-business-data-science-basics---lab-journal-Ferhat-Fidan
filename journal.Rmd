@@ -1,7 +1,7 @@
 ---
 title: "Journal (reproducible report)"
 author: "Ferhat Fidan"
-date: "2020-11-30"
+date: " Rebuilt at 2021-01-03"
 output:
   html_document:
     toc: true
@@ -16,370 +16,478 @@ output:
 knitr::opts_chunk$set(message=FALSE,warning=FALSE, cache=TRUE)
 ```
 
-**IMPORTANT:** You can delete everything in here and start fresh. You might want to start by not deleting anything above this line until you know what that stuff is doing.
+# Chapter 1: Introduction to R, RStudio IDE & GitHub
+Since there were no really tasks in chapter 1 except submitting the URL for this journal, there is not a real Chapter 1 within this journal.
 
-This is an `.Rmd` file. It is plain text with special features. Any time you write just like this, it will be compiled to normal text in the website. If you put a \# in front of your text, it will create a top level-header.
+# Chapter 2: Intro to the tidyverse
 
-# My first post
-Code for first challenge:
-
-
-Last compiled: `r Sys.Date()`
-
-Notice that whatever you define as a top level header, automatically gets put into the table of contents bar on the left. 
-
-## Second level header
-
-You can add more headers by adding more hashtags. These won't be put into the table of contents
-
-### third level header
-
-Here's an even lower level header
-
-# My second post (note the order)
-
-Last compiled: `r Sys.Date()`
-
-I'm writing this tutorial going from the top down. And, this is how it will be printed. So, notice the second post is second in the list. If you want your most recent post to be at the top, then make a new post starting at the top. If you want the oldest first, do, then keep adding to the bottom
-
-# Adding R stuff
-
-So far this is just a blog where you can write in plain text and serve your writing to a webpage. One of the main purposes of this lab journal is to record your progress learning R. The reason I am asking you to use this process is because you can both make a website, and a lab journal, and learn R all in R-studio. This makes everything really convenient and in the same place. 
-
-So, let's say you are learning how to make a histogram in R. For example, maybe you want to sample 100 numbers from a normal distribution with mean = 0, and standard deviation = 1, and then you want to plot a histogram. You can do this right here by using an r code block, like this:
-
-```{r}
-samples <- rnorm(100, mean=0, sd=1)
-hist(samples)
-```
-
-When you knit this R Markdown document, you will see that the histogram is printed to the page, along with the R code. This document can be set up to hide the R code in the webpage, just delete the comment (hashtag) from the cold folding option in the yaml header up top. For purposes of letting yourself see the code, and me see the code, best to keep it the way that it is. You'll learn that all of these things and more can be customized in each R code block.
-
-#Code for Second Challenge
-
-## Data Science at TUHH ------------------------------------------------------
-## SALES ANALYSIS – Chapter 2 Challenge----
-````{r, eval = FALSE}
-## Step 1: Load Packages ---
-install.packages("writexl")
+## Chapter 2 Task 1: Analyzing sales by location with a bar plot
+  
+We start first by loading all packages
+```{r Chapter-2-Task-1-Step-1}
+#1.0 Load Libraries----
 library("tidyverse")
 library("readxl")
 library("writexl")
 library(ggplot2)
 library(lubridate)
-
-## Step 2: Importing Files ----
-bikes_tbl      <- read_excel(path = "00_data/01_bike_sales/01_raw_data/bikes.xlsx")
-orderlines_tbl <- read_excel(path = "00_data/01_bike_sales/01_raw_data/orderlines.xlsx")
-bikeshops_tbl  <- read_excel("00_data/01_bike_sales/01_raw_data/bikeshops.xlsx")
-
-## Step 3: Examining Data ----
-glimpse(bikes_tbl) #oberservation: Category consists of 3 Categories per row. e.g. "Road - Race - Areorad"
-glimpse(orderlines_tbl) #observation: First coloumn was missing a name, hence R added "...1" as a name. Thus it needs some modification
-glimpse(bikeshops_tbl) #observation: location is a pair of "City, Bundesland" one might want to make 2 coloumns out of it to tidy it up
-
-## Step 4: Joining Data ----
-bike_orderlines_joined_tbl <- orderlines_tbl %>%
-  left_join(bikes_tbl, by = c("product.id" = "bike.id")) %>%
-  left_join(bikeshops_tbl, by = c("customer.id" = "bikeshop.id"))
-glimpse(bike_orderlines_joined_tbl)
-
-## Step 5: Wrangling Data ----
-bike_orderlines_wrangled_tbl <- bike_orderlines_joined_tbl %>%
-## Step 5.1: Separate category into its 3 subcategories
-separate(col = category, into = c("category.1","category.2","category.3"), sep = " - ")%>%
-## Step 5.2: Add coloumn for total price of an order line
-mutate(total.price = price * quantity) %>%
-## Step 5.3: Delete the unnecessary coloumns, ...1, gender, latitude and longitude
-select(-...1, -gender, -lat, -lng) %>%
-## Step 5.4: Split location into city and state
-separate(col = location, into = c("city", "state"), sep = ", ")  %>%
-## Step 5.5: Rename "name" to "bikeshop" and replace all "." in coloumn identifiers with "_"
-rename(bikeshop = name) %>%
-  set_names(names(.) %>% str_replace_all("\\.", "_"))
-
-## Step 6: Manipulating Data ----
-##Sales by states, some of the intermediate commands are unneccessary (since the associated coloumns get deleted by group and summarize) 
-##but only kept within code for the sake of completness
-sales_by_state_tbl <- bike_orderlines_wrangled_tbl %>%
-  select(order_date, total_price, city, state) %>%
-  mutate(year = year(order_date)) %>%
-  group_by(state) %>%
-  summarize(sales=sum(total_price)) %>%
-  mutate(sales_text = scales::dollar(sales, big.mark = ".", 
-                                     decimal.mark = ",", 
-                                     prefix = "", 
-                                     suffix = " €")) %>%
-  arrange(sales)
-sales_by_state_tbl
-
-sales_by_state_tbl %>% ggplot(aes(x=state,y=sales))+geom_col(fill = "#2DC6D6") +
-  geom_label(aes(label = sales_text)) +
-  scale_y_continuous(labels = scales::dollar_format(big.mark = ".", 
-                                                    decimal.mark = ",", 
-                                                    prefix = "", 
-                                                    suffix = " €"))+
-  labs(
-    title    = "Revenue by state",
-    subtitle = "States in alphabetical order",
-    x = "", # Override defaults for x and y
-    y = "Revenue"
-  )+ theme(axis.text.x = element_text(angle = 45, hjust = 1))
-
-##sales by states and year
-
-sales_by_state_and_year_tbl <- bike_orderlines_wrangled_tbl %>%
-  select(order_date, total_price, city, state) %>%
-  mutate(year = year(order_date)) %>%
-  group_by(state,year) %>%
-  summarize(sales=sum(total_price)) %>%
-  mutate(sales_text = scales::dollar(sales, big.mark = ".", 
-                                     decimal.mark = ",", 
-                                     prefix = "", 
-                                     suffix = " €")) 
- 
-sales_by_state_and_year_tbl %>%
-  ggplot(aes(x = year, y = sales, fill = state)) +
-  geom_col() + 
-  facet_wrap(~ state) +
-  scale_y_continuous(labels = scales::dollar_format(big.mark = ".", 
-                                                    decimal.mark = ",", 
-                                                    prefix = "", 
+```
+Then we proceed by loading the data into the workspace and saving it in variables that are in the `tibble` data format. 
+```{r Chapter-2-Task-1-Step-2-0}
+#2.0 Load Data and check it out----
+bikes_tbl <- read_excel("00_data/01_bike_sales/01_raw_data/bikes.xlsx")
+bikeshops_tbl <- read_excel("00_data/01_bike_sales/01_raw_data/bikeshops.xlsx")
+orderlines_tbl <- read_excel("00_data/01_bike_sales/01_raw_data/orderlines.xlsx")
+bikes_tbl
+```
+We can see that `bikes_tbl` contains all data about... well the bikes.  
+  
+Let's take a lot at `bike_shop_tbl`
+```{r Chapter-2-Task-1-Step-2-1}
+bikeshops_tbl 
+```
+Not so surprisingly info about the bike shops, like their name, location and id.
+  
+What might orderlines contain?
+```{r Chapter-2-Task-1-Step-2-2}
+orderlines_tbl
+```
+Looking cryptic at the first glance but it contains data about, you guessed it, the orderlines. With the numbers `customer.id` and `product.id` we can identify which bike shop the order belongs to, `customer.id` refers to `bikeshop.id` in the `bikeshops_tbl`, and what products, well bikes, have been ordered since `product.id` refers to `bike.id` in `bikes_tbl`.  
+  
+Now that we know that we can slam those 3 tibbles together with he `left_join()` command and by telling R with the `by = ` argument which parameters belong together.
+We then store the combined data in a new tibble called `bike_orderlines_joined_tbl`.
+```{r Chapter-2-Task-1-Step-3}
+#3 Joining data----
+bike_orderlines_joined_tbl <- orderlines_tbl %>% 
+                              left_join(bikes_tbl, by = c("product.id"="bike.id")) %>%
+                              left_join(bikeshops_tbl, by = c("customer.id" = "bikeshop.id"))  
+```
+Now let's check out if everything went according to plan. For the sake of readability we will use `glimpse()` which gives us a transposed view of the tibble and we will use `head(n=2)` to only print out the first 2 observations because in glimpse the obvervation of each variable are seperated by a mere comma and too many entries make it hard to read.
+```{r Chapter-2-Task-1-Step-3-1}
+bike_orderlines_joined_tbl %>% head(n=2) %>% glimpse() 
+```
+As we can see it looks alright but we still have a lot of information that we don't care about, so time for some data wrangling.
+With the `select()` command and by putting a `-`sign before the argument we drop some columns. Witht he `separate()`-command we split information that was preserved in one column into multiple newly created columns `col =` specifies which column to split up, `into =` creates the new columns in which the information should be parsed and `sep=` specifies the separator which marks where the "old" column should be split up. Then we rename the columns :With `set_names` and `names(.) %>%str_replace_all("\\.","_")` we set all the names of the wrangled tibble to the argument inside `set_names()` which is `names(.) %>%str_replace_all` which translates to "take all column names of `bike_orderlines_joined_tbl` (since it is at the very beginning of the pipe-command concatenation), inspect those names individually and replace every "." inside the name by an underscore "_", so the argument of `set_names()`is a vector with all column names of `bike_orderlines_joined_tbl` but where punctuation signs within the names have been replaced by underscores. Finally with `mutate` we add a new column `total_price` which contains the calculated value of each orderline, and we change the date-time format of `order_date` to a date format for better readability. The wrangled data set gets then stored in `bike_order_lines_wrangled_tbl`.
+```{r Chapter-2-Task-1-Step-4-1}
+#4 Wrangling data----
+bike_orderlines_wrangled_tbl<-bike_orderlines_joined_tbl %>% 
+  select(-...1, -gender, -url, -lat, -lng)%>%
+  separate(col = location, into = c("city", "state"), sep = ", ") %>%
+  separate(col = category, into = c("category.1", "category.2", "category.3"), sep = " - ") %>%
+  set_names(names(.) %>%str_replace_all("\\.","_")) %>%
+  mutate(total_price = quantity*price) %>% mutate(order_date = order_date %>% date())
+```
+Now let's see the results. We can see that it looks slightly better but we still have  a lot of unnecessary information. However that does not matter, since we will wrangle even more in the next step.
+```{r Chapter-2-Task-1-Step-4-2}
+bike_orderlines_wrangled_tbl %>% head(n=10)
+bike_orderlines_wrangled_tbl %>% head(n=2) %>% glimpse()
+```
+Remember: Our task is just to check how much revenue was created in each state by selling bikes during the observation period and compare the states against each other, such that we can draw conclusions like "north rhine wesphalian people really like bikes" or "don't open up a new bike store in Saxony-Anhalt, unless you have no competition since people don't buy bikes there". So in order to draw such highly sophisticated conclusions we have to wrangle the data even more. We `group_by(state)` to create internal subsets of data where each subset consists of all observations but for only one `state` for each subset. That way the following `summarise()` operator operates on each subset of data, here state, individually. Within `summarise` we create a new column `sales` which contains the total sum of all `total_price` entries for each state. Now we are left with a tibble which only consists of 2 columns, `state`, since we grouped by it, and `sales` which contains the total sales of each state accumulated during the whole observation period. Just for the sake of readability we add another column called `sales_text` with `mutate()` and we use `scalles:dollar` to format the data that goes into that column to contain EURO signs etc. Finally we save the newly created 3 column tibble into `sales_by_state`.
+```{r Chapter-2-Task-1-Step-5}
+#5 Even more wrangling for the analysis----
+sales_by_state <- bike_orderlines_wrangled_tbl %>% 
+                  group_by(state) %>% summarise(sales=sum(total_price)) %>%
+                  mutate(sales_text = scales::dollar(sales,
+                                                     prefix = "",
+                                                     suffix = " €",
+                                                     big.mark = ".",
+                                                     decimal.mark = ","))
+```
+Let's take a glimpse at it.
+```{r Chapter-2-Task-1-Step-5-1}
+sales_by_state 
+```
+The data looks good.  
+For the curious people the oberservation period starts at 2015 and ends at 2019:
+```{r Chapter-2-Task-1-Step-5-2}
+bike_orderlines_wrangled_tbl %>%transmute(year = year(order_date)) %>% distinct() 
+```
+Now it's time to visualize the results. Pipe the clean and wrangled tibble into `ggplot()` to create the canvas, use `aes(x = state, y=sales)` within `ggplot()` to tell R that we want the `state` observations to be distributed along the x-axis and the `sales` info to become the y-values. Add some `geom_col()` to paint a column-plot, err bar plot, on that canvas, use `fill = "blue"` within `geom_col()` to tell R that we'd like our bars to be blue. Alter the y-axis with `scale_y_continuous()` and `labels = scales::dollar_format(big.mark = ".", decimal.mark = ",", prefix = "", suffix = " €")` within `scale_y_continuous()` such that R knows that our y-values are continuous and that we want a formatting with euro signs to please our book keepers, potential investors and financial quants. Then we use `labs()` to add titles, and some text. And as the final layer we add `theme(axis.text.x = element_text(angle = 45, hjust=1))`. Using `theme()` we can change a lot of the visual presentation of the plot and everything in and around it like background color, font size of title etc., here we only use `axis.text.x = element_text(angle = 45, hjust=1)` as the single argument to tell R to tilt the identifiers along the x-axis ticks, which are the state name, by 45 degrees and move them a little horizontally. That way we prevent the state names from overlapping each layer.
+```{r Chapter-2-Task-1-Step-6, fig.cap= "Final result of the first task of Chapter 2", fig.width=10, fig.height=7}
+#6 Plotting the results----
+sales_by_state %>% ggplot(aes(x = state, y=sales))+geom_col(fill = "blue")+
+  geom_label(aes(label=sales_text), size = 3) +
+  scale_y_continuous(labels = scales::dollar_format(big.mark = ".",decimal.mark = ",",
+                                                    prefix = "",
                                                     suffix = " €")) +
-  labs(
-    title = "Revenue by year and state",
-    subtitle = "Urban regions, except for Berlin, have an upward trend",
-    fill = "State" 
-  )
+  labs(title = "Total revenue bike sales from 2015 to 2019 distributed over states of Germany",
+       subtitle = "North Rhine-Westphalia has by far the highest revenue",
+       x= "",
+       y = "Revenue") + 
+  theme(axis.text.x = element_text(angle = 45, hjust=1))
+```
+Eh voilà we finished our first plot. When creating plots in R just remember to add layers upon each other, like the layers of paint in a Rembrandt wet on wet oil painting. 
 
-## Step 7 Writing Files ----
-## Step 7.1 Excel 
-bike_orderlines_wrangled_tbl %>%
-  write_xlsx("00_data/01_bike_sales/02_wrangled_data/bike_orderlines_challenge.xlsx")
-## Step 7.2 CSV
-bike_orderlines_wrangled_tbl %>% 
-  write_csv("00_data/01_bike_sales/02_wrangled_data/bike_orderlines_challenge.csv")
+## Chapter 2 Task 2: Analyzing sales by location with a bar plot
 
-## Step 7.3 RDS
-bike_orderlines_wrangled_tbl %>% 
-  write_rds("00_data/01_bike_sales/02_wrangled_data/bike_orderlines_challenge.rds")
-````
+In the previous task we visualised the total revenue per state over the **whole observation period**. Now we want to see the **annually evolution** of bike sales per state. Since the task is similar and since we already wrangled the in the `#4 Wrangling data----` code chunk of task 1 we can just continue at that step.
+Out of `bike_orderlines_wrangled_tbl` we wrangle the data once more to be appropriate for this analysis. The steps are *almost* the same as in `#5 Even more wrangling for the analysis----` of Task 1. But this time we begin with `transmute()` which creates new columns and drops every column that is not named within the command as an argument. We use combined with `year()` to extract only the `year` data out of `order_date` and save that info a column called `year`. We also name `total_price` and `state` since we want those columns to be preserved. Now we `group_by(state,year)` instead of `group_by(state)`. That way we internally have 60 data subsets 12 states times 5 years (2015 til 2019). The rest is identical to the steps in task 1.
+```{r Chapter-2-Task-2-1}
+#5 but for Task 2 More Wrangling----
+sales_by_state_year <-  bike_orderlines_wrangled_tbl %>%
+  transmute(year= year(order_date), total_price, state) %>%
+  group_by(state,year) %>% summarise(sales=sum(total_price)) %>% ungroup() %>%
+  mutate(sales_text = scales::dollar(sales,
+                                     prefix = "",
+                                     suffix = " €",
+                                     big.mark = ".",
+                                     decimal.mark = ","))
+```
+And since we summarised over that 60 subsets we get 60 observations, as we can see in the following tibble:
+```{r Chapter-2-Task-2-2}
+sales_by_state_year
+```
+Now that we have a tibble for the second task we can use it to plot the results. Just like we did in the plot for the previous task we build it layer by layer again.
+But with 2 differences: This time we add `geom_smooth(method="lm", se= FALSE)` to add a linear regression on top of the bar plot. Furthermore with the `facet()` command we separate the plot into multiple plots **facets**. By using `~state` as argument of the ` facet_wrap()` command we tell R that those small plots each should result by subsetting the orignal plot by the variable `state`.
 
-## SALES ANALYSIS – Chapter 3 Challenge - Part 1----
+```{r Chapter-2-Task-2-3, fig.cap= "Final result of the second task of Chapter 2", fig.width=10, fig.height=7}
+#6 Plot but for Task 2 More Wrangling----
+sales_by_state_year %>% ggplot(aes(x = year, y=sales, fill = state)) + geom_col() +
+  geom_smooth(method="lm", se= FALSE) +
+  scale_y_continuous(labels = scales::dollar_format(big.mark = ".",decimal.mark = ",",
+                                                    prefix = "",
+                                                    suffix = " €")) +
+  facet_wrap(~state)+
+  labs(title = "Development of bike sales revenue in 12 states of Germany",
+       subtitle = "From 2015-2019")
+```
+We can see that the states in the western Germany show the highest growth in bike sales whereas the states that used to belong to the German Democratic Republic show poorer performance. Furthermore for an official presentation to a broader audience we should have tweaked the code even more since right now the title of the Mecklenburg-Western Pomeranian facet needs some adjustments.
 
-````{r, eval = FALSE}
-# WEBSCRAPING – Chapter 3 Challenge----
+# Chapter 3: Data Acquisition (APIs and Webscraping)
 
-# 1.0 LIBRARIES ----
+## Chapter 3 Task 1: Let's get some data via API
+The TESLA stock of the Tesla, Inc is skyrocketing since spring of 2020. Many analysts even the CEO Elon Musk himself stated multiple times that the shares are overvalued. Maybe I should get some shares myself. However since I am not able yet to create a prognosis for the data and since it is not the objective of
+this course. SO here we will stick to the mere task of fetching the current price via an API from [alphavantage.co](https://www.alphavantage.co/).
+As usual we begin first by loading the necessary libraries.
 
-library(tidyverse) # Main Package - Loads dplyr, purrr, etc.
-library(rvest)     # HTML Hacking & Web Scraping
-library(xopen)     # Quickly opening URLs
-library(jsonlite)  # converts JSON files to R objects
-library(glue)      # concatenate strings
-library(stringi)   # character string/text processing
+```{r Chapter-3-Task-1-Step-1}
+#1.0 Load Libraries and read in data----
 library(httr)
+library(tidyverse)
 library(keyring)
-
-#A first task (API)
-# A2.0 Setup Data Retrieval from API----
-#A2.1Define Key and load it---- 
-keyring::key_set("token")
-key_get("token")
-
-#A2.2 Get Monthly XRP-USD Price from alphavantage ----
+library(jsonlite)
+library(rlist)
+```
+After that is done we prepare the URL and query parameters for the GET request. We want to GET some data from the API.
+In the variavble `alphavantage_api_url` we store the url of the API, in `ticker` we specify the ticker of the stock which we want to get data of.
+Inside of `GET()` we then plug in our URL of the API and specify some arguments to further narrow down what data we want from the API within the `query =` argument. We have also stored a private API token for alphavantage within the variable `token`. With the fuction `key_get()` from the `keyring` library we call that key and store it in `apikey` and send it to alphavantage, letting them know that it is us who wants the TSLA stock data. 
+```{r Chapter-3-Task-1-Step-2}
+#2.0 Prepare code for request and send a GET request----
 alphavantage_api_url <- "https://www.alphavantage.co/query"
-ticker               <- "XRPUSD"
-xrp_usd_json <- GET(alphavantage_api_url, query = list('function' = "TIME_SERIES_MONTHLY_ADJUSTED",
+ticker               <- "TSLA"
+TESLA_resp<-GET(alphavantage_api_url, query = list('function' = "GLOBAL_QUOTE",
                                        symbol     = ticker,
-                                       apikey     = key_get("token"))
-)
-#A2.3 Convert the Json Data into Tibble----
-xrp_usd_r<- xrp_usd_json %>% 
-  .$content %>% 
-  rawToChar() %>% 
-  fromJSON(flatten=T) %>%
-  bind_rows() %>% 
-  as_tibble() %>%
-  #Delete the first 4 coloumns since the don't contain useful info
-  select(-starts_with("1."), -starts_with("2."), -starts_with("3."), -starts_with("4.") ) %>%
-  #delete null rows
-  drop_na() %>% 
-  # tibble has now 7 coloumns, drop the last one, since last one is for dividend and XRP doesn't have divididends
-  slice(1:6)
+                                       apikey     = key_get("token")))
+```
+Let's check if it worked.
+```{r Chapter-3-Task-1-Step-3}
+status_code(TESLA_resp)
+```
+Hurray! The status code  is 200 meaning that our GET-request was succesful.
+  
+When one calls `TESLA_resp` one can see that the data is json as calling the code returns `Content-Type: application/json` (and some more info).
+And that r interprets the result as a list of lists, with lots of meta-data. However we do not care about the meta-data we want the actual data about our stock prices. That information is stored in `content`. There are several ways to extract it the most obvious one being the `content()` command of the `httr` package. When not specifying any extra arguments, the content would return the data `as = "parsed"` however we want it `as = "text"`.
+```{r Chapter-3-Task-1-Step-4}
+content(TESLA_resp, as = 'text')
+```
+The curly braces and the fact that the data comes in `key: value` pairs also indicates us this is indeed JSON. We can now use the `fromJSON()` command which then gives us an R-list only contain the content data:
+```{r Chapter-3-Task-1-Step-5}
+content(TESLA_resp, as = 'text') %>% fromJSON()
+```
+Now to get that into a a tibble we could first use `list.stack()` from the `rlist` package which puts it the element of the list into a data frame with each object of the list becoming one variable of the data frame. 
+```{r Chapter-3-Task-1-Step-6}
+content(TESLA_resp, as = 'text') %>% fromJSON() %>% list.stack()
+```
+And since data frame objects and tibbles share the same commands from tidyverse we can now wrangle the data and or convert it to a tibble with `as_tibble()`.
+Here we rename the column names and convert the type of the variables.
+```{r Chapter-3-Task-1-Step-7}
+TESLA_tbl_1 <-  content(TESLA_resp, as = 'text') %>% 
+                fromJSON() %>% 
+                list.stack() %>%
+                set_names(names(.) %>% str_replace_all("[:digit:][:digit:]\\.\\s","")) %>%
+                type_convert()  %>% as_tibble()
+TESLA_tbl_1
+```
 
-#A2.4 Tidy up the Tibble even more----
-#up til now each coloumn is one day and the rows contain Open, High, Low, Close, Adjusted Close and Volume in that Order (from Top to Bottom)
-#so slice them up to create subtitles and pivot them
-xrp_usd_r_open <- xrp_usd_r %>% slice(1) %>% pivot_longer(cols      = c(names(.)[1:70]), 
-                                                          names_to  = "Date",
-                                                          values_to = "Open")
-
-xrp_usd_r_high <- xrp_usd_r %>% slice(2) %>% pivot_longer(cols      = c(names(.)[1:70]), 
-                                                          names_to  = "Date",
-                                                          values_to = "High")
-
-xrp_usd_r_low <- xrp_usd_r %>% slice(3) %>% pivot_longer(cols      = c(names(.)[1:70]), 
-                                                         names_to  = "Date",
-                                                         values_to = "Low")
-
-xrp_usd_r_close<- xrp_usd_r %>% slice(4) %>% pivot_longer(cols      = c(names(.)[1:70]), 
-                                                          names_to  = "Date",
-                                                          values_to = "Close")
-
-xrp_usd_r_adjusted_close<- xrp_usd_r %>% slice(5) %>% pivot_longer(cols      = c(names(.)[1:70]), 
-                                                                   names_to  = "Date",
-                                                                   values_to = "Adjusted Close")
-
-xrp_usd_r_adjusted_volume<- xrp_usd_r %>% slice(6) %>% pivot_longer(cols      = c(names(.)[1:70]), 
-                                                                    names_to  = "Date",
-                                                                    values_to = "Volume")
-#join now the tidy (pivoted) subtibbles together to have Open, High etc. as coloumns
-xrp_usd_r_tidy <- xrp_usd_r_open %>% left_join(xrp_usd_r_high,by = c("Date" = "Date")) %>% 
-  left_join(xrp_usd_r_low,by = c("Date" = "Date")) %>%
-  left_join(xrp_usd_r_close,by = c("Date" = "Date")) %>%
-  left_join(xrp_usd_r_adjusted_close,by = c("Date" = "Date")) %>%
-  left_join(xrp_usd_r_adjusted_volume,by = c("Date" = "Date")) %>%
-  view()
-
-
-````
-
-
-## SALES ANALYSIS – Chapter 3 Challenge - Part 2----
-
-````{r, eval = FALSE}
-
-# WEBSCRAPING – Chapter 3B Challenge----
-
-# 1.0 LIBRARIES ----
-
+The following commands would have yielded the same result
+```{r Chapter-3-Task-1-Step-8}
+TESLA_tbl <-  TESLA_resp %>% .$content %>% 
+              rawToChar() %>% fromJSON()  %>% 
+              bind_rows() %>% 
+              set_names(names(.) %>% str_replace_all("[:digit:][:digit:]\\.\\s","")) %>% 
+              type_convert()
+TESLA_tbl
+```
+By specifying different parameters in the GET-request one can also get monthly, daily annually and even more fancy kind of data for stocks and cryptocurrencies etc. However that objective of the task was not get the most complicated data possible but to just fetch any kind of data with an API.  
+  
+## Chapter 3 Task 2: Webscraping
+Let's scrape the data for all bikes of [Radon Bikes](https://www.radon-bikes.de/en).  
+Let's begin as usual by first loading in the necessary libraries.
+```{r Chapter-3-Task-2-Step-1}
+#1.0 Libraries
 library(tidyverse) # Main Package - Loads dplyr, purrr, etc.
+library(xml2)
 library(rvest)     # HTML Hacking & Web Scraping
 library(xopen)     # Quickly opening URLs
 library(jsonlite)  # converts JSON files to R objects
 library(glue)      # concatenate strings
 library(stringi)   # character string/text processing
-library(httr)
+```
+After the libraries are loaded, we first read in the URL of the home side of the website that we want to scrape into an variable, here called `url_radon_home`.
+Then we download and read in the html document with the command `read_html` from the `rvest` package and save it in `radon_home_html`.  
+Now it's time to pick the categories and parse them into a tibble. We use commands from the `rvest` package to navigate through the html-document. With `html_nodes()` and css selectors that we identified by manually inspecting the website we pick the right nodeset that contains the data that we want to extract. Since html documents are hierarchically structured with some markers (HTML= Hypertext Markup Language) the information that we actually want is stored in text and we extract it with the command `html_text()`. Finally we pipe the text into `enframe()` which creates a tibble for us. Finally we save the tibble in `categories_tbl`.
+```{r Chapter-3-Task-2-Step-2}
+#2.0 Define the home html, read in the html and define bike categories.
+url_radon_home          <- "https://www.radon-bikes.de/en/"
+radon_home_html         <- read_html(url_radon_home)
+categories_tbl <- radon_home_html %>% html_nodes(css = '.submenu.js-submenu.megamenu .megamenu__item > a > span') %>% html_text() %>% 
+enframe(name = "position", value = "bike_category")
+```
+Time to inspect the tibble
+```{r Chapter-3-Task-2-Step-2-1}
+categories_tbl
+```
+Accessories and RADON WEAR are not bikes so we will discard it. Now it's time to extract the URLS to those categories. We see that those are inside the attributes of the parent nodes of where we got the category names from. So we extract those links out of the attribute tags with the `html_attr()` command. Since RADON WEAR and Accessoires are within a family called "wear" we can discard those likes with `discard()` and the selection helper `stringr::str_detect()`. Again we use `enframe()` to build a tibble.  
+By using the `mutate()` command and `str_extract()` together with an `RegEX` expression we also extract the `bike_family` and put that info into a column. We can easily do it since that info was also given in the `href`.   
+Then we use `mutate()` and the `glue()` command from the `glue` package to build full the url to the product categories by concatenating the `url_radon_home` with the sub urls that are stored within `href`.  
+Also upon further inspecting the website we notice that in order to list all models of a category we have to click on a button called `show all bikes` which takes us to the bikegrid. Each category seems to be build the same way and we get there by adding `bikegrid` to the URL.  
+Now we can merge that tibble with `categories_tbl` which contains our categories. Since we got the category names from children `span` nodes of the nodes where we got the links from both tibbles have the same order. So we can merge them together by `left_join` and don't need to specify a `by=` argument since they both share the position column. After that the wrangle the tibble a little to make it look cleaner and store the data in `bike_category_tbl`.
+  
+
+```{r Chapter-3-Task-2-Step-3}
+#----
+#This part is just copied from #2.0 in the previous code chunk
+#Because rmarkdown seems to have troubles remembering htmls.
+#Despite having specified the htmls in the previous code chunks
+#I always get the following error:
+#Error in xml_ns.xml_document(x) : external pointer is not valid
+#Calls: <Anonymous> ... xml_find_all.xml_node -> xml_ns -> xml_ns.xml_document
+
+url_radon_home          <- "https://www.radon-bikes.de/en/"
+radon_home_html         <- read_html(url_radon_home)
+#----
 
 
-url<- "https://www.rosebikes.de/fahrr%C3%A4der/rennrad"
+bike_category_tbl <- radon_home_html %>% html_nodes(css = '.submenu.js-submenu.megamenu .megamenu__item > a') %>%
+  html_attr('href') %>% discard(.p = ~stringr::str_detect(.x,"wear")) %>%
+  enframe(name = "position", value = "category_directory")%>%   
+  mutate(bike_family = category_directory %>% str_extract("(?<=\\/en\\/).*(?=\\/\\w)"))%>%
+  mutate(url = glue("https://www.radon-bikes.de{category_directory}"))%>%
+  mutate(url = glue("{url}bikegrid/")) %>%
+  left_join(categories_tbl) %>% select(bike_family, bike_category, url) 
+```
+So the final tibble containing the bike categories and the URLs to them looks like this.
+```{r Chapter-3-Task-2-Step-3-1}
+bike_category_tbl
+```
+After opening the links to the models of each category in a browser and identifying the appropriate css- selectors we can now create a functionn which takes a url to the bike category as an argument, and does the following:
 
-xopen(url)
+1. Read in the HTML of that category
+2. Navigate through that html
+  + extract the node set with the model names
+  + write the model name into a tibble
+  + write the position in the node set where the name was found into tibble too
+  + store that tibble in a variable called `model_name`
+3. Navigate through that html again
+  + extract the node set with the prices of each model
+  + write price and position in node set into tibble
+  + store that tibble in a variable called `model_price`
+4. Do the same as with `2.` and `3.` but with URL
+  + store the tibble in variable called `model_url`
+5. Join and column bind all 3 tibbles together and store in variable called `models_tbl`
+```{r Chapter-3-Task-2-Step-4}
+#----
+#This part is just copied from #2.0 in the previous code chunk
+#Because rmarkdown seems to have troubles remembering htmls.
+#Despite having specified the htmls in the previous code chunks
+#I always get the following error:
+#Error in xml_ns.xml_document(x) : external pointer is not valid
+#Calls: <Anonymous> ... xml_find_all.xml_node -> xml_ns -> xml_ns.xml_document
 
-html <- read_html(url)
+url_radon_home          <- "https://www.radon-bikes.de/en/"
+radon_home_html         <- read_html(url_radon_home)
+#----
 
-#2.2 Get Model Data ----
-bike_tbl_model <- html %>%
-  html_nodes(css = ".catalog-category-bikes__title") %>%
-  html_text("catalog-category-bikes__title-text") %>%
-  enframe(name = "position", value = "model")
-#2.2 Get Price Data ----
 
-bike_tbl_price <- html %>%
-  html_nodes(css = ".catalog-category-bikes__price") %>%
-  html_text("catalog-category-bikes__price-title") %>%
-  stringr::str_extract(pattern = "(?<=ab ).*" ) %>%
-  stringr::str_replace_all(pattern = "€", replacement = "") %>%
-  stri_trim_right() %>%
-  # Make all values numeric
-  stringr::str_replace_all(pattern = "\\.", replacement = "") %>%
-  stringr::str_replace_all(pattern = ",", replacement = ".") %>%
-  as.numeric() %>%
-  enframe(name = "position", value = 'price_in_EUR') #%>% view()
+bike_category_url_vec <-  bike_category_tbl %>% mutate(url = url %>% as.character()) %>%
+                          pull(url)
+bike_category_url_vec
 
-#bike_tbl_price%>%pull(`price_in_EUR`)
-#bike_tbl_price %>% summarise(Gesamt = sum(price_in_EUR))
+get_bike_data <- function(url) {
+    bike_category_html <- read_html(url)
+    model_name <- bike_category_html %>% html_nodes(css = 'h4.a-heading')%>% 
+      html_text(trim = TRUE) %>% enframe(name = "position", value = "model")
+    model_price <- bike_category_html %>% 
+      html_nodes(css = '.currency_eur .m-bikegrid__price--active')%>% 
+      html_text()%>% enframe(name = "position", value = "price_text")
+    model_url <- bike_category_html %>% html_nodes(css = 'div.row.columns a')%>% 
+      html_attr("href")%>% enframe(name = "position", value = "model_dir") %>%
+      mutate(url = glue("https://www.radon-bikes.de{model_dir}")) %>% 
+      select(-model_dir)%>% distinct(url)
+    models_tbl <- left_join(model_name, model_price) %>% 
+      cbind(model_url) %>% as_tibble()
+}
+```
+Now we could extract the URLs to all bike categories out of `bike_category_tbl` and put them into a character vector named `bike_category_url_vec`.
+After that we could use `map()` witht he arguments `bike_category_url_vec` and `get_bike_data`.
+```{r Chapter-3-Task-2-Step-5, eval = FALSE}
+bike_category_url_vec <-  bike_category_tbl %>% mutate(url = url %>% as.character()) %>%
+                          pull(url)
+bike_category_url_vec
 
-#2.3 Merge both tables
+bike_data_lst <- map(bike_category_url_vec, get_bike_data)
 
-bike_tbl <- bike_tbl_model %>% left_join(bike_tbl_price)
-#bike_tbl states base bike subcategory prices, but each subcategory has specific models so those are to be scraped aswell.
-````
+# But R-Markmarkdown gives the following error upon knitting
+Error in parse(text = dbname) : <text>:1:13: unexpected '/'
+1: maps::https:/
+                ^
+Calls: <Anonymous> ... maptype -> mapenvir -> paste0 -> Sys.getenv -> eval -> parse
+Execution halted
+```
+We could do that in theory, however it did not work. I got the following error upon knitting:
+```{r Chapter-3-Task-2-Step-5-error, eval = FALSE}
+Error in parse(text = dbname) : <text>:1:13: unexpected '/'
+1: maps::https:/
+                ^
+Calls: <Anonymous> ... maptype -> mapenvir -> paste0 -> Sys.getenv -> eval -> parse
+Execution halted
+```
+![](ron-swanson-computer-rage.gif)
+  
+It worked great in the R file but not in the rmd-file. Several attempts to fix it failt.  
+After being unable to fix it despite googleing and being close to throwing the pc into the trash just like Ron Swanson in the gif, 
+I just decided to go for a for loop. Since that's more helpful for accomplishing the task and also the cheaper solution.  
+  
+We first create an empty tibble called `bike_data_tbl` then we create a for loop which loops through each category URL with `i in seq_along(bike_category_tbl$url`. Then with each step of the for loop we read the next URL into `bike_category_url`. We execute `get_bike_date()` with the latest url inside `bike_category_url`, add some more columns to the tibble that `get_bike_date()` creates (actually it would have been smarter to code that part within the code of `get_bike_data()`) and bind bind the tibble back to the bottom of the previous `bike_data_tbl` tibble. That way each step within the for loop the `bike_data_tbl` gets extended by the data of one category. We also include `Sys.sleep(1)` such that we don't flood the radon-bikes servers with too many html requests too quickly.
+```{r Chapter-3-Task-2-Step-5-alternative}
+bike_data_tbl <- tibble()
 
-## SALES ANALYSIS – Chapter 4 Challenge ----
+for (i in seq_along(bike_category_tbl$url)) {
+  
+  bike_category_url <- bike_category_tbl$url[i]
+  bike_data_tbl     <- bind_rows(bike_data_tbl, get_bike_data(bike_category_url)%>% 
+                                   mutate(bike_family = bike_category_tbl$bike_family[i], 
+                                          bike_category = bike_category_tbl$bike_category[i]))
+  
+  Sys.sleep(1)
+  
+  
+}
+```
+Now lets wrangle the data a little, by bringing the columns into the right position and view the result.
+```{r Chapter-3-Task-2-Step-Result}
+bike_data_wrangled_tbl <- bike_data_tbl %>% 
+                            select(bike_family, bike_category, everything(),-position)
+  bike_data_wrangled_tbl
+```
+Since that's not very insightful lets drop the url, since it takes too much space away from the screen and just inspect the last 2 bikes of every category:
+```{r Chapter-3-Task-2-Step-Result-2}
+bike_data_wrangled_tbl %>% select(-url) %>%
+  group_by(bike_category) %>% slice(tail(row_number(), 2))
+```
+The results look good mission accomplished.  
+  
+  
+Further info: We could have expanded the code of `get_bike_data` to also navigated to each single bike URL to get some more info about the individual bike.
+Each individual bike has a table on bottom which stores the specifications of that bike. Here we'll do just that for the Jealous 8.0 model.
+```{r Chapter-3-Task-2-Bike-Specs}
+jealous_80_html <- read_html("https://www.radon-bikes.de/en/mountainbike/hardtail/jealous/jealous-80-2021/")
+specs_terms <- jealous_80_html %>% html_nodes('div.m-feature-list.row.bikespecs') %>% html_nodes('span.m-feature-list__term') %>% html_text() %>% 
+  enframe(name = "position", value ="Component")
+specs_desc <- jealous_80_html %>% html_nodes('div.m-feature-list.row.bikespecs') %>% html_nodes('span.m-feature-list__description')%>% 
+  html_text()%>% enframe(name = "position", value ="Description")
+specs_tbl <- left_join(specs_terms, specs_desc)
+specs_tbl %>% print(n = Inf)
+```
+  
+However since I couldn't come up with an idea to include the specifications for each model into the tibble that contains all models `bike_data_wrangled_tbl` while still keeping a neat look without creating many more columns or collapsing the specs and putting it into a single specifications column, neither of which would have looked appealing and since it's not within the scope of the task, I didn't do that.
+  
+  
 
-````{r, eval = FALSE}
-#Ch4 Challenge----
-#1 Load packages----
-# Tidyverse
+# Chapter 4: Data Wrangling
+
+## Chapter 4 Task 1: List the 10 US companies with the most patents 
+  
+  
+As usual we first define the necessary libraries. Then we proceed by preparing data. For the first task we first have to read in 2 data files: The `assignee.tsv`and the `patent_assignee.tsv`. In order to read them in quickly we will use the `vroom` package. Before reading them in we have to specify the data types of columns of the data that r should read in. These are called `cole_types` and we named them accordingly `col_types_assignee` for the `assignee.tsv` and `col_types_patent_assignee` for the `patent_assignee.tsv`. After having done that we can read in the data with vroom by specifiyng the necessary arguments. Note that for the `col_types` variables we actually specified the types of some columns to be `col_skip()`. That way R won't read in those columns and we save computing ressources, since we don't actually need that data that is stored in those columns to accomplish the task at hand.
+```{r Chapter-4-Task-1-Step-1, eval = FALSE}
+#1.0 Load Libraries and read in data----
 library(tidyverse)
 library(vroom)
 
-# Data Table
-library(data.table)
-#2 Data import----
+
 col_types_assignee <- list(
   id = col_character(),
-  type = col_integer(),
-  name_first = col_character(),
-  name_last = col_character(),
-  organization = col_character()
-)
-
+  type = col_character(),
+  name_first = col_skip(),
+  name_last = col_skip(),
+  organization = col_character())
 
 assignee_tbl <- vroom(
   file       = "assignee.tsv", 
   delim      = "\t", 
   col_types  = col_types_assignee,
-  na         = c("", "NA", "NULL")
-)
-class(assignee_tbl)
+  na         = c("", "NA", "NULL"))
 
 
-#patent assigne
 col_types_patent_assignee <- list(
   patent_id = col_character(),
   assignee_id = col_character(),
-  location_id = col_character()
-)
-
+  location_id = col_skip())
 
 patent_assignee_tbl <- vroom(
   file       = "patent_assignee.tsv", 
   delim      = "\t", 
   col_types  = col_types_patent_assignee,
-  na         = c("", "NA", "NULL")
-)
-class(patent_assignee_tbl)
+  na         = c("", "NA", "NULL"))
 
+```
+Now that we have read in the data it's time to do some data wrangling to actually answer the question: "Which 10 US companies hold the most patents?"  
+Taking a look at `Patents_DB_dictionary_bulk_downloads.xlsx` we see that the column `id` in `assignee_tbl` is identical to `assigne_id` in `patent_assignee_tbl`. We also see that a `type` value of `assignee_tbl` corresponds to a US company and that the field `organization` always has a value if the assignee is a company. Also we see that `patent_id` inside `patent_assignee_tbl` is a unique number that is unique for each patent.
+We can now use that knowledge to first combine those 2 tibbles via left join and store in an intermediate tibble called `pat_assig_combined`. We also use `write_rds` to store it locally so we can use it on the next tasks.
 
-# 3.1 Acquisition Data ----
-setDT(assignee_tbl)
-class(assignee_tbl)
+```{r Chapter-4-Task-1-Step-2, eval = FALSE}
+#2.0 Merge assigne_tbl and patent_assignee_tbl and save it----
+pat_assig_combined<-patent_assignee_tbl %>% left_join(assignee_tbl, by = c("assignee_id" = "id"))
 
-setDT(patent_assignee_tbl)
-class(patent_assignee_tbl)
-#4 Merge----
-combined_data <- patent_assignee_tbl %>%
-  left_join(assignee_tbl, by = c("assignee_id" = "id"))
+pat_assig_combined %>% write_rds("02_data_wrangling/pat_assig_combined.rds")
+```   
+Then we filter and say that we want the `type` to be 2 (US company), and just to be sure we also say that we only want observations where the `organization` is not empty. That way we have all observations for US companies, including the unique `patent_id` and the name of the US companies within
+`organization`. At this point we have *3,325,720* observations. Now since in principle multiple people with different assignee_ids could own the same patent while still working for the same organization we use `distinct(patent_id, organization)` to make sure that each pair of organization and patent_id only occurs one time. That way we reduce the amount of observations to *3,325,060*. Now we only have to `group_by(organization)`, and `summarise()` the amount of observations, which is equivalent to the amount of rows, which we get with `n()`, per organization. That number then is equal to the number of patents for that specific organization and gets saved in a new column called `NumberOfPatents`. Then just `ungroup()` arrange by `NumberOfPatents` descending from top to bottom and slice of the top 10 of that tibble. We save the result in `Top10_Patents_US`.
 
-
-setkey(combined_data, "assignee_id")
-key(combined_data)
-
-# Create New Data Table for the 10 US companies with the most patents
-top_10_patent <- combined_data[!is.na(organization), .N, by = organization][order(-N)][1:10]
-setnames(top_10_patent, "N", "Number of Patents")
-top_10_patent %>% glimpse()
-
-#Side Info: Only 1 patent id without any orginazion or person assigned to it
-combined_data[is.na(assignee_id)]
-
-#2nd subtask Repeat previous steps
+```{r Chapter-4-Task-1-Step-3, eval = FALSE}
+#3.0 Wrangle the Data to get the results----
+  Top10_Patents_US <- pat_assig_combined %>% filter(!is.na(organization), type == 2) %>% 
+  distinct(patent_id, organization) %>% 
+  group_by(organization) %>% summarise(NumberOfPatents = n()) %>% 
+  ungroup() %>% arrange(desc(NumberOfPatents)) %>% slice(1:10)
+```  
+Et voilà our top 10 companies with most patents are the following with International Business Machines Corporation, better known as IBM, being the US company that holds the most patents.
+```{r Chapter-4-Task-1-Result, echo = FALSE}
+#1.0 Load Libraries and read in data----
+  Top10_Patents_US <- read_rds("02_data_wrangling/Top_10_US_Company_Patent.rds")
+  Top10_Patents_US
+```
+## Chapter 4 Task 2: List the top 10 US companies with the most new granted patents for 2019
+The second task is to not list the 10 US companies that hold the most patents overall but the top 10 US companies that got granted the most patents in 2019. To answer that question we can use the tibble that we used by joining the `assignee_tbl` and the `patent_assignee_tbl`, namely `pat_assig_combined` however there we lack the data that specifies WHEN the patents were granted. In order to get that data we need to read in the `patent.tsv` which stores additional information about each patent_id the United States Patent and Trademark Office can gets its hands on. To be precise the `patent.tsv` combines the `id` of each patent with it's `type`, `abstract`, `date`, `filename` and much more. However to accomplish this task we actually only need the date for each `id`. To read in the `patent.tsv` we proceed as in the first task of this chapter and first define the col_types and store it in `col_types_patent` and then we can vroom vroom read in the `patent.tsv` just as we did in the first task. In principle we could `col_skip()` every parameter of the list except `id` and `date` however just curiosity here less columns were skipped. Assuming that one tackles the the second task in a new R-script, load libraries again. This time we will also use the `lubridate` package.
+```{r Chapter-4-Task-2-Step 1, eval = FALSE}
+#Define a list for the col_types and read in data----
+library(tidyverse)
+library(vroom)
+library(lubridate)
 
 col_types_patent <- list(
   id = col_character(),
-  type = col_character(),
-  number = col_character(),
+  type = col_skip(),
+  number = col_skip(),
   country = col_character(),
   date = col_date("%Y-%m-%d"),
-  abstract = col_character(),
+  abstract = col_skip(),
   title = col_character(),
-  kind = col_character(),
-  num_claims = col_double(),
-  filename = col_character(),
-  withdrawn = col_double()
+  kind = col_skip(),
+  num_claims = col_skip(),
+  filename = col_skip(),
+  withdrawn = col_skip()
 )
 
 patent_tbl <- vroom(
@@ -389,23 +497,403 @@ patent_tbl <- vroom(
   na         = c("", "NA", "NULL")
 )
 
-setDT(patent_tbl)          
-class(patent_tbl)
-patent_tbl %>% filter(country != 'US') # AS we can see all patensts were granted in the US (returns 0 rows)
-# Dropping some variables (for this task actually even more variables could have been dropped)
-patent_slim_tbl <- patent_tbl %>% select(id, number, date, num_claims, withdrawn, kind, title) %>% 
-#adding year coloumn to filter (actually not necessary but I don't like overly nested commands)  
-mutate(year = year(date)) %>% 
-# Filter for year 2019 (deletes rows that are not from 2019)  
-filter(year == 2019)
-patent_slim_tbl %>% dim()
-patent_combined_2019<-patent_slim_tbl %>% left_join(combined_data, by= c("number" = "patent_id"))
-#Some Patents are assigned to multiple organisations e.g. paten_id: 10174115 is assigned, to unviersite paris-sud, aix-Marseille (and some more)
-patent_combined_2019 %>% group_by(number) %>% summarise(count = n(), organization) %>% ungroup() %>%
-  arrange(desc(count)) %>% slice(10:17)
 
-top_10_patent_2019<-patent_combined_2019 %>% filter(!is.na(organization)) %>% group_by(organization) %>% summarise(count = n(), organization) %>% ungroup() %>%
-  arrange(desc(count)) %>% unique()%>% slice(1:10)
-top_10_patent_2019 %>%glimpse()
 
-````
+```
+Assuming that we still have `pat_assig_combined`, if not just read it in like in the following chunk, we filter again for US companies and use `distinct()` as before for the known reason.After that we join the result with with `patent_tbl` that we just read in. Then we filter by year by using the `lubridate` command `year()` on `date` to extract the year and compare it to `== 2019`. After we know see patents of US companies that have been granted in 2019, we now use `group_by(organization)` and `summarise()`, `arrange()` etc. just like in the first task.
+```{r Chapter-4-Task-1-Step 2, eval = FALSE}
+#Torture... err... wrangle the data until it gives us insight----
+pat_assig_combined <- read_rds("02_data_wrangling/pat_assig_combined.rds")
+
+Top_10_US_Company_Most_Patent_in_2019_tbl <- pat_assig_combined %>% 
+  filter(!is.na(organization), type == 2) %>% 
+  distinct(patent_id, organization) %>% 
+  left_join(patent_tbl,by= c("patent_id" = "id")) %>% 
+  filter(year(date) == 2019) %>% group_by(organization) %>% 
+  summarise(NumberOfPatents_in_2019 = n()) %>% ungroup() %>%
+  arrange(desc(NumberOfPatents_in_2019)) %>% head(n=10)
+```
+And the top 10 US companies with he most patents granted in 2019 are... drumroll..:
+```{r Chapter-4-Task-1-Step 2-2, echo = FALSE}
+#Define a list for the col_types and read in data----
+Top_10_US_Company_Most_Patent_in_2019_tbl <- read_rds("02_data_wrangling/Top_10_US_Company_Most_Patent_in_2019_tbl.rds")
+Top_10_US_Company_Most_Patent_in_2019_tbl
+```
+IBM is number 1 again. Those guys really seem to be productive.
+
+## Chapter 4 Task 3: For the top 10 companies (worldwide) with the most patents, what are the top 5 USPTO tech main classes?
+
+In the previous 2 tasks we have only looked at US companies. Now we will look at all companies world wide and check what main class, as defined by the United States Patent and Trademark Office, their patents that are listed there belongs to. That information is stored in the `uspc.tsv`. It contains `uuid`, `patent_id`, `mainclass_id`, `subclass_id` and `sequence`. The `mainclass_id` is what we care for. It stores info like "this patent is for a new super innovative **bed**". Unfortunately the `mainclass_id` isn't "bed" in that case but the less straight forward number "5". The `subclass_id` gives information about what case of bed it is. Lets say it's has a "sofa form". In that case the `subclass_id` would have the value 7. Mainclass and subclass together make up the uspc class.`uuid` is just some unique identifier for the observation (particular combination of `patent_id`, `mainclass_id`, `subclass_id` and `sequence`.) `Sequence` specifies at which position in the patent file the `mainclass_id` appears, sine most patents have multiple `mainclass_id`-`subclass_id` pairs. For example lets assume that the sofa bed also is an air matress, then the patent would have have the classes (mainclass/subclass) 5/7 for bed, sofa form and 5/706 for bed, "Having confined gases, (e.g. air matress)". The combinations 5/7 and 5/706 would then have different sequences depending on what class was stated first in the patent. Hence although being 1 invention and thus one patent with 1 patent_id, it occupies 2 observations with 2 different `uuid`s in the `uspc.tsv`. 
+  
+Enough explanations, time to tackle the task!
+Lets assume again that this task was tackled in a separate R-script for better readability.
+First we begin by loading the necessary packages
+```{r Chapter-4-Task-3-Step-1, eval = FALSE}
+#1 Loading libraries---
+library(tidyverse)
+library(vroom)
+library(lubridate)
+library(rvest)
+library(rlist)
+```
+Wait, why do we need `rvest`? Since the `mainclass_id`s are not very comprehensible as previosly state lets directly scrape their meaning from the mainpage. Alternative one could of course look them up manually. The mainclasses can be looked up [here](https://www.uspto.gov/web/patents/classification/selectnumwithtitle.htm). Just like in Chapter 3 we first read in the html with `read_html()`, then we navigate to the corresponding node where the information is located, here we know after inspection of the website that the information is stored in a table. Here we use xpath-selectors and we search first for a a table somewhere in the html, that contains the text content "Apparel", since that is the content of an actual cell of the table that we want to scrape. Since we are now too deep in the html we navigate to the parent nodes a couple times til we 
+are at the right table (there are a lot of tables type nodes within tables type nodes in the html and most of them don't even look like a true table in the browser). Probably there would have been a less verbose and tidier approach but we'll take whatever works. At the right table we use `html_table` to extract it, `list.stack()` to slam it into a data frame and `as_tibble()` to convert it into a tibble. We store the resulting tibble as `mainclass_ID_dictionary_tbl`. Now we wrangle the tibble and save the cleaned up version in `mainclass_ID_dictionary_tbl_cleaned`.
+```{r Chapter-4-Task-3-Step-2, eval = FALSE}
+#2 Scraping the mainclass_id meanings----
+patent_mainclass_IDs_html <-read_html("https://www.uspto.gov/web/patents/classification/selectnumwithtitle.htm")  
+
+mainclass_ID_dictionary_tbl <- patent_mainclass_IDs_html %>% 
+  html_nodes(xpath = '//table//*[text() = "Apparel"]') %>% 
+  html_nodes(xpath = '..') %>% html_nodes(xpath = '..') %>% 
+  html_nodes(xpath = '..') %>% html_table() %>% 
+  list.stack() %>% as_tibble()
+
+mainclass_ID_dictionary_tbl_cleaned <- mainclass_ID_dictionary_tbl %>% 
+  select(-X1, -X2) %>% set_names(c("Mainclass_id", "Mainclass_Title")) %>% 
+  filter(!(Class_Number %>% str_detect("Class"))) %>%
+  mutate(Mainclass_id = Mainclass_id %>% str_replace_all("^0{1,2}",""))
+
+```
+Now it's time to define the col_types of the uspc file we have talked so much about in `col_types_uspc` and lets read the uspc into `uspc_tbl`.
+```{r Chapter-4-Task-3-Step-3, eval = FALSE}
+#Define a list for the col_types and read in data----
+col_types_uspc <- list(
+  uuid = col_character(),
+  patent_id = col_character(),
+  mainclass_id = col_character(),
+  subclass_id = col_character(),
+  sequence = col_skip())
+
+
+uspc_tbl <- vroom(
+  file       = "uspc.tsv", 
+  delim      = "\t", 
+  col_types  = col_types_uspc,
+  na         = c("", "NA", "NULL")
+)
+```
+Checking the dimensions of `uspc_tbl %>% distinct(patent_id)` shows us that there are only 5.07 Million unique `patent_id`s in the `uspc_tbl`
+```{r Chapter-4-Task-3-Step-4, eval = FALSE}
+uspc_tbl %>% distinct(patent_id) %>% dim()
+```
+
+```{r Chapter-4-Task-3-Step-5, echo = FALSE}
+dim_of_distinct_patent_id_in_uspc <- read_rds("02_data_wrangling/dim_of_distinct_patent_id_in_uspc.rds")
+dim_of_distinct_patent_id_in_uspc
+```
+But there are 6.6 Million distinct `patent_id`s in our `pat_assig_combined` tibble. That gives rise to the hypothesis that not all patents are listed within the uspcs file.
+```{r Chapter-4-Task-3-Step-6, eval = FALSE}
+pat_assig_combined %>% distinct(patent_id) %>% dim()
+```
+
+```{r Chapter-4-Task-3-Step-7, echo = FALSE}
+pat_assig_combined_unique_patent_dim <- read_rds("02_data_wrangling/pat_assig_combined_unique_patent_dim.rds")
+pat_assig_combined_unique_patent_dim
+```
+Lets ignore this issue for now. Although not necessary for this task let's find first out what the 10 most prominent tech sectors overall for all companies and individuals are, even including patents like your neighbor's backscratcher. Therefore we simple take the `uspc_tbl`, use `distinct(patent_id,mainclass_id)` such that each patent and mainclass combination only appears once, then we `group_by(mainclass_id)` summarise and count the rows as usual, ungroup and arrange as usual, such that the most prevalent main classes are at the top, slice the top 10 of the tibble, and join it with our `mainclass_ID_dictionary_tbl_cleaned` to get meaningful names for the `mainclass_id`s and store it all inside  `Patents_Per_Sector_tbl`.
+
+
+```{r Chapter-4-Task-3-Step-8, eval = FALSE}
+Patents_Per_Sector_tbl <- uspc_tbl %>% distinct(patent_id,mainclass_id) %>% 
+  group_by(mainclass_id) %>% summarise(NumberOfPatents = n()) %>% ungroup() %>% 
+  arrange(desc(NumberOfPatents)) %>% slice(1:10) %>% left_join(mainclass_ID_dictionary_tbl_cleaned, by = c("mainclass_id" = "Class_Number"))
+Patents_Per_Sector_tbl 
+```
+As we can see the most prevalent tech sectors include active solid-state devices and (electrical) communications which seems natural considering that IBM was by far the mightiest company of the US when it comes to having a lot of patents.The tibble here is only shows the top 10 over all sectors.
+```{r Chapter-4-Task-3-Step-9, echo = FALSE}
+Patents_Per_Sector_tbl <- read_rds("02_data_wrangling/Patents_Per_Sector_tbl.rds")
+Patents_Per_Sector_tbl 
+```
+
+Similar to getting the top 10 US companies for patents lets get the a top 10 for worldwide companies that hold the most patents.
+The procedure is the same but with the difference that we now include all `type`s of the`pat_assig_combined` which refers to the classification of assignees (2 for US companies, 3 for foreign companies and different numbers for other kinds of classifications).
+```{r Chapter-4-Task-3-Step-10, eval = FALSE}
+Top10_Patents_Company_WorldWide <- pat_assig_combined %>% 
+  #filter the organizations, and get distinct patent_Id, organization pairs, such that a value-value pairs patent_id-organization are unique
+  filter(!is.na(organization)) %>% distinct(patent_id, organization) %>% 
+  #Summarise how many patent_IDs each organization has, ungroup and order by descending and return the top 10 companies
+  group_by(organization) %>% summarise(NumberOfPatents = n()) %>% 
+  ungroup() %>% arrange(desc(NumberOfPatents)) %>% slice(1:10)
+
+Top10_Patents_Company_WorldWide
+```
+Now Korean and Japanese companies also appeared within the list, but IBM is still at top. Those guys *REALLY* do like their patents. In total that's 618771 patents.
+```{r Chapter-4-Task-3-Step-11, echo = FALSE}
+Top10_Patents_Company_WorldWide <- read_rds("02_data_wrangling/Top10_Patents_Company_WorldWide.rds")
+Top10_Patents_Company_WorldWide 
+```
+Now since we lost information by summarise, lets get back the patent_IDs etc. by now filtering the `pat_assig_combined` for those company names, use distinct again so that we have unique data pairs, and let's rename the `type` to `assigne classification`. Again the tible only shows the first 10 entries here for better computing but when working in the r-script it of course had many more entries.
+
+```{r Chapter-4-Task-3-Step-12, eval=FALSE}
+Top_10_WorldWide_Company_Patent_IDs_TBL<- pat_assig_combined %>% 
+  filter(organization %in% Top10_Patents_Company_WorldWide$organization)%>%
+  distinct(patent_id, organization, type) %>% rename(AssigneeClassification = type)
+```
+
+
+```{r Chapter-4-Task-3-Step-13, echo=FALSE}
+Top_10_WorldWide_Company_Patent_IDs_TBL_first10 <- read_rds("02_data_wrangling/Top_10_WorldWide_Company_Patent_IDs_TBL_first10.rds")
+Top_10_WorldWide_Company_Patent_IDs_TBL_first10 
+```
+
+Let's find out how many patents are shared. We know that those top 10 companies have 618.771 patent_ids in total. Lets look up how many of those are unique:
+```{r Chapter-4-Task-3-Step-14, eval=FALSE}
+Top_10_WorldWide_Company_Patent_IDs_TBL %>% distinct(patent_id) %>% dim()
+```
+They have 618.365 unique patent_ids in total.
+```{r Chapter-4-Task-3-Step-15, echo = FALSE}
+Top10_company_distinct_patent <- read_rds("02_data_wrangling/Top10_company_distinct_patent.rds")
+Top10_company_distinct_patent
+```
+That means that shared patent_ids cause: 618.771-618.365 = 406 extra entries. In other words, those patent IDs that belong to more than 1 company appear also in 406 observations when not counting in their first appearance.   
+Lets identify those: `duplicated((Top_10_WorldWide_Company_Patent_IDs_TBL$patent_id))` returns are boolean vector with values `TRUE` or `FALSE` indicating whether a patent_id occurs more than 1 time. Thus `Top_10_WorldWide_Company_Patent_IDs_TBL[duplicated(Top_10_WorldWide_Company_Patent_IDs_TBL$patent_id),]` gives us all excess rows. For example if ``Top_10_WorldWide_Company_Patent_IDs_TBL` has the following entries. 
+
+patent_id  | Assignee_classification | organization 
+------------- | ------------- | -------------
+5544211 | 3 | Kabushiki Kaisha Toshiba 
+5544211 | 2 | General Electric Company 
+5544211 | 3 | Hitachi, Ltd.   
+  
+Then `Top_10_WorldWide_Company_Patent_IDs_TBL[duplicated(Top_10_WorldWide_Company_Patent_IDs_TBL$patent_id),]` will give us not the first but the subsequent occurences of that patent number namely  
+  
+patent_id  | Assignee_classification | organization 
+------------- | ------------- | -------------
+5544211 | 2 | General Electric Company 
+5544211 | 3 | Hitachi, Ltd. 
+
+
+```{r Chapter-4-Task-3-Step-16, eval=FALSE}
+Duplicates_Top_10_WorldWide_Company_Patent_IDs_TBL<-Top_10_WorldWide_Company_Patent_IDs_TBL[duplicated(Top_10_WorldWide_Company_Patent_IDs_TBL$patent_id),]
+```
+
+```{r Chapter-4-Task-3-Step-17, echo=FALSE}
+Duplicates_Top_10_WorldWide_Company_Patent_IDs_TBL <- read_rds("02_data_wrangling/Duplicates_Top_10_WorldWide_Company_Patent_IDs_TBL.rds")
+Duplicates_Top_10_WorldWide_Company_Patent_IDs_TBL
+```
+When we then check how many of those 406 entries are truly unique we get 366 unique patent_ids.
+```{r Chapter-4-Task-3-Step-18}
+Duplicates_Top_10_WorldWide_Company_Patent_IDs_TBL %>% distinct(patent_id)
+```
+As we can see 366 patent_ids are shared. Not a lot considering that those 10 companies together have 618.365 patent_ids.  
+  
+
+Now let's find those 618.365 unique patent_ids within the `uspc_tbl`. First save those distinct `patent_id`s in a character vector called `Distinct_Patent_IDs_of_Top_10_World_Wide_Comapanies_vec`. We will use it to filter the `uspc_tbl`. And save the result which in theory should contain uspc entries for those patent numbers ino the variable `uspc_for_Top_10_WorldWide_Company_Patent_IDs_TBL`. However checking which distinct `patent_id`s have been found in the uspc shows an unexpected result...is way smaller than expected....
+```{r Chapter-4-Task-3-Step-19, eval=FALSE}
+Distinct_Patent_IDs_of_Top_10_World_Wide_Comapanies_vec <- Top_10_WorldWide_Company_Patent_IDs_TBL %>% distinct(patent_id) %>% pull(patent_id)
+
+uspc_for_Top_10_WorldWide_Company_Patent_IDs_TBL <- uspc_tbl %>% filter(patent_id %in% Distinct_Patent_IDs_of_Top_10_World_Wide_Comapanies_vec)
+
+uspc_for_Top_10_WorldWide_Company_Patent_IDs_TBL %>% distinct(patent_id) %>% dim()
+```
+Oh snap! We only have found 414.213 patent_ids of those 618.365 patent_ids in the uspc, and thus lost around 200.000 patent ids...
+```{r Chapter-4-Task-3-Step 20, echo = FALSE}
+uspc_for_Top_10_WorldWide_Company_Patent_IDs_TBL_dim <- read_rds("02_data_wrangling/uspc_for_Top_10_WorldWide_Company_Patent_IDs_TBL_dim.rds")
+uspc_for_Top_10_WorldWide_Company_Patent_IDs_TBL_dim
+```
+The issue could be caused by the following:
+The USPC_tbl only holds 5.066.573 distinct patent ids in total and remember that the `patent_assignee_tbl` holds 6.563.095 distinct patent ids. Just like we claimed before.   
+```{r Chapter-4-Task-3-Step 21, eval = FALSE}
+uspc_tbl %>% distinct(patent_id) %>% dim()
+```
+
+```{r Chapter-4-Task-3-Step-22, echo = FALSE}
+uspc_distinct_Patent_IDs_dim <- read_rds("02_data_wrangling/uspc_distinct_Patent_IDs_dim.rds")
+uspc_distinct_Patent_IDs_dim
+```
+Hence the `uspc.tsv` doesn't contain all entries for all patents that are listed in `patent_assignee_tbl`. Hence even the patents of the top 10 companies aren't all occuring in the `uspc.tsv`. So let's hope that it's not us who is at fault. So lets look at the filtered USPC which in total has 1,386,095 entries (here only the first 10 entries are shown). 
+```{r Chapter-4-Task-3-Step-23, echo = FALSE}
+uspc_for_Top_10_WorldWide_Company_Patent_IDs_TBL_first10 <- read_rds("02_data_wrangling/uspc_for_Top_10_WorldWide_Company_Patent_IDs_TBL_first10.rds")
+uspc_for_Top_10_WorldWide_Company_Patent_IDs_TBL_first10
+```
+
+
+Now that we have `uspc_for_Top_10_WorldWide_Company_Patent_IDs_TBL` which contains all patent_ids of the top 10 companies that could be found within the `uspc` and which also contains their respective uspc info like the mainclass we first use `distinct` such that each patent_id and mainclass_id pair occurs only once. One particular patent id can then still pop up multiple times but since it then can still contain different `mainclass_id`s but now we can make sure that we don't coun't `mainclass_id`s for a specific `patent_id` multiple times and vice versa: We don't count a `patent_id` within a `mainclass_id` multiple times. Then we group by `mainclass_id`, and count the rows with `n()` within `summarise()` so that we then know the amount of distinct `patent_id`s within the `mainclass_id`, ungroup, arrange in descending order, and slice to get the most dominant 5 sectors. Finally we join it with our main_class id dictionary to get the meanings. And now we can finally see the result.
+```{r Chapter-4-Task-3-Step-24, eval = FALSE}
+Top5_mainclasses_of_Top10_companies <- uspc_for_Top_10_WorldWide_Company_Patent_IDs_TBL %>% 
+  distinct(mainclass_id, patent_id) %>% group_by(mainclass_id) %>%
+  summarise(NumberOfPatents = n()) %>% ungroup() %>% 
+  arrange(desc(NumberOfPatents)) %>% slice(1:5) %>% 
+  left_join(mainclass_ID_dictionary_tbl_cleaned, by = c("mainclass_id" = "Class_Number"))
+
+Top5_mainclasses_of_Top10_companies
+```
+As expected: Since the top 10 companies are companies that produce electronical devices or components, the 5 sectors that those companies have the most impact on are also the tech sectors that govern electronical devices. 
+```{r Chapter-4-Task-3-Step-25, echo=FALSE}
+Top5_mainclasses_of_Top10_companies <- read_rds("02_data_wrangling/Top5_mainclasses_of_Top10_companies.rds")
+
+Top5_mainclasses_of_Top10_companies
+```
+  
+Keep in mind that the NumberOfPatents column is a bit missleading. It states how many of those patents (of those companies) are counted in that mainclass. So we have 102.219 entries for those 5 mainclasses combined. However those 102.219 entires are only 87.794 distinct `patents` which is since one patent can belong to multiple mainclasses.  
+  
+
+# Chapter 5: Data Visualisation
+  
+  
+## Chapter 5 Task 1: Time Series of Cumulated COVID-19 cases
+  
+Since the daily collected data for world wide distribution of COVID-19 cases that is hosted on the webpage of [European Centre for Disease Prevention and Control](https://www.ecdc.europa.eu/en/publications-data/download-todays-data-geographic-distribution-covid-19-cases-worldwide) stopped being further updated after December, 14th 2020, here the .xlx-version of December, 14th was downloaded and read in with `read_xlsx`. Our goal is to create a line plot which shows the evolution of cumulated COVID-19 cases for **Germany, France, Spain, the UK, the USA and Europe**. First we load the necessary libraries and read in the covid-data that is stored in the xlsx. That data then gets written in a tibble called `covid_data_tbl`
+```{r Chapter-5-Task-1-Step-1}
+#1.0 Load Libraries and read in data----
+library(tidyverse)
+library(lubridate)
+library(readxl)
+library(ggplot2)
+library(ggthemes)
+library(ggrepel)
+
+covid_data_tbl <- read_xlsx("COVID-19.xlsx")
+```
+
+In the next step we first read in a character vector containing all the countries that we want to filter. Since **Europe** is not a country but a continent we will care for it in the next step. After creating the character vector containing the countries of interest, we take our `covid_data_tbl` pipe `%>%` it into a `filter()` function which filters our the countries specified in the vector, then we pipe everything into a `select()` command in order to drop unnecessary columns, then `rename()` some columns and convert the data type of the date which currently is a `data-time format (dttm)` into a `date`-format for convenience. Now in order to get the cumulated cases, we `arrange()` first by `Date` such that old data is at the top of the list, we use the `group_by()` command, with the argument `Country`, to create (internal) subsets of the tibbles each of which containing only one country and use the `mutate()` command to create a new column and calculate its data as cumulated sum with the command `cumsum()` of the cases in one step. Always remember to `ungroup()` after that so that we can re-`arrange` everything without causing errors. That wrangled data set then gets stored in the variable `cov_19_tbl1`.
+```{r Chapter-5-Task-1-Step-2-1}
+#2.1 Define Vector and wrangle data----
+CountriesOfInterest <- c("Germany", "France", "Spain", "United_Kingdom", "United_States_of_America")
+
+cov_19_tbl1 <- covid_data_tbl %>% filter(countriesAndTerritories %in% CountriesOfInterest) %>%  select(dateRep, day, month, year, cases, countriesAndTerritories) %>% 
+  rename("Country" = "countriesAndTerritories") %>% mutate(dateRep = dateRep %>% date()) %>%rename("Date" = "dateRep") %>% 
+  arrange(Date) %>% group_by(Country) %>% mutate(Cumulative_Cases = cumsum(cases)) %>% ungroup() %>% arrange(Country,Date) 
+
+```
+
+We still lack the cumulated cases for **Europe**. For that we will create another tibble in the next step. The pipe commands are almost the same, however we now filter by `continentExp` rather than `countriesAndTerritories` and just for the sake of changing things up, first group_by(Date) instead of country since every single row now belongs to europe after filtering. We also use `summarise()` this time instead and sum the cases. That way we will have 1 row for each date in the data set, in which the (new) case column will now contain the sum of the cases of all european countries for that day. By using summarise instead of mutate, we also lose all columns that are not specified in the group_by command. Hence we are left with only the Date column and the new case column that was created within summarise(). We could have circumvented this by using mutate instead of summarise() but where is the fun in that? Since we "deleted" columns, we have to recreate them again with the mutate() command and reorder them with the `relocate()` command to get the the exact same structure and column names as in the `cov_19_tbl1` tibble.  
+```{r Chapter-5-Task-1-Step-2-2}
+#2.2 More data wrangling----
+cov_19_tbl2 <- covid_data_tbl %>% filter(continentExp == "Europe") %>% select(dateRep, day, month, year, cases, countriesAndTerritories,continentExp) %>% 
+  mutate(dateRep = dateRep %>% date()) %>% rename("Date" = "dateRep", "Country" ="countriesAndTerritories", "Continent" = "continentExp") %>% 
+  arrange(Date) %>% group_by(Date) %>% summarise(cases = sum(cases)) %>% ungroup() %>%
+  mutate(Cumulative_Cases = cumsum(cases)) %>% mutate(day = day(Date),month = month(Date),year = year(Date), Country = "Europe") %>% 
+  relocate(Cumulative_Cases, .after = Country) %>% relocate(cases, .before = Country)
+```
+
+After we have done that and stored the result in `cov_19_tbl2` we can combine both tibbles into a final one called `cov_19_tbl` with the `bind_rows()` command. Furthermore we change the names of the countries that consist of underscores like "United_Kingdom" with the mutate() command and `str_replace_all()`  to replace those pesky underscores with a blank space for the sake of readability.
+```{r Chapter-5-Task-1-Step-2-3}
+#2.3 Final data wrangling----
+cov_19_tbl <- cov_19_tbl1 %>% bind_rows(cov_19_tbl2) %>% mutate(Country = Country %>% str_replace_all("_"," "))  %>% arrange(Country,Date) 
+```
+The combined data looks like this:
+```{r Chapter-5-Task-1-Step-2-Final-Tibble-1, echo=FALSE}
+cov_19_tbl  
+```
+And if we sort by date first and then by country like this 
+```{r Chapter-5-Task-1-Step-2-Final-Tibble-2, echo=FALSE}
+cov_19_tbl %>% arrange(Date, Country) 
+```
+The last 2 days show the following numbers:
+```{r Chapter-5-Task-1-Step-2-Final-Tibble-3, echo=FALSE}
+cov_19_tbl %>% arrange(Date, Country) %>% tail(n = 11) 
+```
+Note that there is no data for spain on the 14th of December. They probably didn't publish their data that day.  
+  
+Now that we have a data set which includes our wrangled data, we can start with the actual **plot**. First we quickly create a small 2x3-tibble which contains the most recent data for Europe and the USA. That tibble is used to store data for 2 **labels** that we will add to the plot. We will pipe the `cov_19_tbl` tibble into `ggplot()` and specify the **aesthetics** `aes()` to create the **canvas**. In the aesthetics we define that the **Date** belongs to the **x-coordinates** and that the **cumulative cases** are distributed in **y-direction**. Plots in R are build layer upon layer, and we stack layers upon each other with a plus sign. After creating the canvas we put a layer of line plots with `geom_line()` on top. In the aesthetics `aes()` we specify that the x-dimension is the date and the y-dimension is the cumulated cases just like we did in ggplot. Adding color = country also tells R to color the lines that belong to different countries differently. With  `geom_label_repel()` we then add 2 labels for the most recent data for the USA and for Europe in the plot. With `scale_x_date()` and `scale_y_continuous()` we tell R how to formate the axes. With labs we then add captions, titles and so on. And finally with `theme()` we define the visual properties of the plot (and the legend, canvas, etc.).
+```{r Chapter-5-Task-1-Step-3, fig.align= 'left', fig.cap= "Final Result of Challenge 5 Task 1"}
+#3 Creating the Plot----
+label_data <- cov_19_tbl %>% filter(Country == "Europe"|Country == "United States of America") %>%
+  arrange(desc(Date)) %>% slice(1:2) %>% select(Date, Country, Cumulative_Cases)
+
+cov_19_tbl %>% ggplot(aes(Date, Cumulative_Cases)) + geom_line(aes(x = Date, y = Cumulative_Cases, group = Country, color = Country)) +  
+  
+  geom_label_repel( 
+    data=cov_19_tbl %>% filter((Country == "Europe"|Country == "United States of America")&Date == "2020-12-14"), 
+    aes(label= scales::comma(Cumulative_Cases, big.mark = ".", decimal.mark = ",")),
+    nudge_x = -50,
+    box.padding   = 0.35, 
+    point.padding = 0.5,
+    segment.color = 'white') +
+  
+  scale_x_date(date_breaks = "1 month", date_labels = "%B") + 
+  
+  scale_y_continuous(labels = scales::number_format(scale = 1e-6, 
+                                                    prefix = "",
+                                                    decimal.mark = ",",
+                                                    suffix = "M")) + 
+  
+   labs(  title = "Cumulative Cases of the Covid-19 Pandemic",
+          subtitle = "Numbers for USA, Europe and selected European countries. \nTracked til December 14th, 2020",
+          x = "Year 2020",
+          y = "Cumulative Cases",
+          color = "Continent/ Country",
+          caption = "Source of Data: https://opendata.ecdc.europa.eu/covid19")+
+  
+theme(panel.grid.major  = element_line(color = "#D9D9D9"), 
+      panel.grid.minor  = element_line(color = "#D9D9D9"),
+      panel.background = element_rect(fill = "#737373"),
+      panel.border = element_rect(color = "black", fill = NA),
+      plot.title = element_text(vjust = 2),
+      plot.subtitle = element_text(vjust = 1, size= 10),
+      axis.ticks = element_line(color = "black", size = 1),
+      axis.text = element_text(color = "#252525", size = 14),
+      axis.text.x = element_text(angle = 45,hjust = 1),
+      axis.title.x = element_text(color = "#737373", size = 18),
+      axis.title.y = element_text(color = "#252525", size = 16),
+      legend.position="bottom",
+      legend.title = element_text(color = "#252525", size = 14),
+      legend.text =  element_text(color = "#252525", size = 12 )) 
+```
+
+## Chapter 5 Task 2: Heat map to visualise the mortality rate of COVID-19 per country around the globe
+
+In the first task we created a line plot which shows the evolution of the cumulated covid cases for certain countries. In this task we will create a heat map which shows the mortality rate due to COVID-19 for each country in the world. Our goal is to create a map of the globe in which each country for itself is uniformly colored with the color corresponding to the mortality rate due to COVID-19 in that country. For the calculation of the actual mortality rate per country we will take the total population within 1 year of that country as one metric, cumulate all covid deaths per country within one year and divide the total population by that cumulated annual covid deaths. For the sake of simplicity we assume the total population to be constant during the observed time frame, and since we have only the population data of 2019, we will take that for our analysis. Furthermore we'd need to cumulate the deaths over a year. Our dataset starts at 31/12/2019 and ends at 14/12/2020. That causes a slight deviation of the "true" mortality rate, however that is all that we can do, so we will stick with that data.  
+  
+Like in the previous task we first start with preparing the dataset:
+We first select again our read in covid data from the xlsx, stored in `covid_data_tbl`, select only the columns of interest, being `dateRep`, `deaths`, `popData2019` and `countriesAndTerritories`. We will then sort by countries first and then by date, groupy by countries, and summarise the total deaths. First lets check the feasibility of that approach by doing that and filtering for Germany:
+```{r Chapter-5-Task-2-Step-0}
+#Step 0: Checking feasibility. Most libraries and data are still loaded by code chunks of the first task---
+covid_data_tbl %>% select(dateRep, deaths, popData2019, countriesAndTerritories)%>% arrange(countriesAndTerritories, desc(dateRep)) %>%
+  group_by(countriesAndTerritories) %>% summarise(total_deaths = sum(deaths)) %>% ungroup() %>% filter(countriesAndTerritories == "Germany")
+```
+From the [status report](https://www.rki.de/DE/Content/InfAZ/N/Neuartiges_Coronavirus/Situationsberichte/Dez_2020/2020-12-14-en.pdf?__blob=publicationFile)german RKI we now that the total death count is correct for that day: dec 14th, 2020.  
+  
+Now that we now that the apporach is correct lets do that and write it into a new tibble called `cov_total_death`.
+```{r Chapter-5-Task-2-Step-1-1}
+#1.1 Data wrangling----
+cov_total_death <- covid_data_tbl %>% select(dateRep, deaths, popData2019, countriesAndTerritories)%>% arrange(countriesAndTerritories, desc(dateRep)) %>%
+  group_by(countriesAndTerritories) %>% summarise(total_deaths = sum(deaths)) %>% ungroup()
+```
+Since we lose some columns by summarise (alternatively we could have just used mutate to not lose any columns), we create a tibble which contains the population and call it `pop_data`. We then merge `pop_data` and `cov_total_death` together to get back the total population count. We then use `mutate()` to calculate the mortality rate and store that value in a column called `mortality_rate`. Then we alter the names of the countries to fit those of another data set that we will load in the next step. The final wrangled data then gets stored in a tibble called `cov_mortality`. 
+```{r Chapter-5-Task-2-Step-1-2}
+#1.2 More Data wrangling----
+pop_data <- covid_data_tbl %>% select(countriesAndTerritories, popData2019,) %>% arrange(countriesAndTerritories) %>% distinct()
+
+cov_mortality <- cov_total_death %>%left_join(pop_data) %>% mutate(mortality_rate = total_deaths/popData2019) %>% 
+  mutate(across(countriesAndTerritories, str_replace_all, "_", " ")) %>%
+  mutate(countriesAndTerritories = case_when(
+    countriesAndTerritories == "United Kingdom" ~ "UK",
+    countriesAndTerritories == "United States of America" ~ "USA",
+    countriesAndTerritories == "Czechia" ~ "Czech Republic",
+    TRUE ~ countriesAndTerritories
+    )) 
+```
+We are almost done preparing our data but to in order to create the heat map we need some geographical data and the `maps` library. 
+We join the geographical data that we stored in a variable called `world` and got via the `map_data("world")` together with our `cov_mortality` data, to get a final data tibble that can be used to create the world heat map with ggplot. Furthermore we also store the maximum mortality in a variable called `Max_mortality_rate` to properly scale our data later.
+```{r Chapter-5-Task-2-Step-1-3}
+#1.3 Load maps library and final data wrangling----
+library(maps)
+world <- map_data("world")
+cov_mortal_world <-world %>% left_join(cov_mortality, by = c("region" = "countriesAndTerritories"))
+Max_Mortality_rate <-cov_mortal_world %>% filter(!is.na(mortality_rate)) %>%pull(mortality_rate) %>% max()
+cov_mortal_world %>% distinct(region,total_deaths) %>% filter(!is.na(total_deaths)) %>%summarise(total_death = sum(total_deaths))
+```
+We can see that 1.6M people died worldwide to COVID-19. Now that our data is prepared it's time to create the actual plot.  
+In principle the procedure is the same as when creating the plot for the first task of this chaper. The main difference now is that we use `geom_map()` instead of `geom_line()` in order to create the worldmap. 
+```{r Chapter-5-Task-2-Step-2}
+#2 Creating the Plot----
+ggplot(cov_mortal_world, aes(map_id = region, fill = mortality_rate))+
+  geom_map(map = cov_mortal_world,  color = "#969696")+
+  expand_limits(x = cov_mortal_world$long, y = cov_mortal_world$lat)+
+  scale_fill_gradient(low = "red", high = "black", breaks = seq(from = 0, to = Max_Mortality_rate,length.out=6), labels = scales::percent_format(accuracy = 0.01L))+
+  labs(
+    title = "Confirmed COVID-19 deaths in relation to size of population",
+    fill="Mortality Rate",
+    subtitle = "Over 1.6M deaths worldwide as of  December, 14th 2020",
+    x = NULL,
+    y = NULL,
+    caption = "Source of Data: https://opendata.ecdc.europa.eu/covid19"
+    ) +
+  theme(axis.line=element_blank(),axis.text.x=element_blank(),
+        axis.text.y=element_blank(),axis.ticks=element_blank(),
+        axis.title.x=element_blank(),
+        panel.grid.major  = element_line(color = "#D9D9D9"), 
+        panel.grid.minor  = element_line(color = "#D9D9D9"),
+        panel.background = element_rect(fill = "#252525"))
+```
